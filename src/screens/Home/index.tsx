@@ -1,37 +1,70 @@
-import React from 'react';
-import { View, Image, FlatList } from 'react-native';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useState } from 'react';
+import { Image, FlatList, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Logo from '../../assets/logo-nlw-esports.png';
-import { GameCard, Heading } from '../../components';
-import FortniteImage from '../../assets/games/game-5.png';
-import { GAMES } from '../../utils/games';
-
+import { useNavigation } from '@react-navigation/native';
+import { Background, GameCard, GameCardProps, Heading } from '../../components';
 import { styles } from './styles';
+import { THEME } from '../../theme';
+
+interface Games {
+    id: string;
+    title: string;
+    banner:  string;
+    _count: {
+        Ads: number;
+    }
+}
 
 export function Home() {
+    const [loading, setLoading] = useState(true);
+    const [games, setGames] = useState<Games[]>([]);
+    
+    const navigation = useNavigation();
+
+    function toGame({ id, title, banner }: GameCardProps) {
+        navigation.navigate('game', { id, title, banner });
+    }
+
+    function fetchData() {
+        fetch('http://192.168.0.48:3000/games')
+            .then(response => response.json())
+            .then((data) => setGames(data));
+
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        fetchData();
+    },[]);
+    
     return (
-        <View style={styles.container}>
-            <Image 
-                source={Logo}
-                style={styles.logo}
-            />
+        <Background>
 
-            <Heading 
-                title='Encontre seu duo!'
-                subtitle='Selecione o game que deseja jogar...'
-            />
+            <SafeAreaView style={styles.container}>
+                <Image 
+                    source={Logo}
+                    style={styles.logo}
+                />
 
-            <FlatList 
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.contentList}
-                data={GAMES}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <GameCard {...item} />
-                )}
+                <Heading 
+                    title='Encontre seu duo!'
+                    subtitle='Selecione o game que deseja jogar...'
+                />
 
-            />
-
-        </View>
+                {loading
+                    ? <ActivityIndicator size={20} color={THEME.COLORS.TEXT}/>
+                    : <FlatList 
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.contentList}
+                        data={games}
+                        keyExtractor={(item) => item.id}
+                        renderItem={({ item }) => <GameCard {...item}  onPress={() => toGame(item)} />}
+                    />
+                }
+            </SafeAreaView>
+        </Background>
     );
 }
